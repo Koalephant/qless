@@ -43,6 +43,6 @@ language-specific extension will also remain up to date.
   s.add_dependency 'statsd-ruby', '~> 1.3'
   s.add_dependency 'thin', '~> 1.6'
   s.add_dependency 'thor', '~> 0.19'
-  s.add_dependency 'vegas', '~> 0.1.11'
+  s.add_dependency 'vegas', '~> 0.1.12'
 
 end

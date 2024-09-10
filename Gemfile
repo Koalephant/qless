@@ -1,5 +1,7 @@
 source "http://rubygems.org"
 
+gem 'vegas', git: 'https://github.com/Koalephant/vegas'
+
 # Specify your gem's dependencies in qless.gemspec
 gemspec
 
