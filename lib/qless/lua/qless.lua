@@ -1,4 +1,4 @@
--- Current SHA: 9d2cca3846a96fee53000085e36638e74ed392ed
+-- Current SHA: e30168ce06262cfa4df107cadeb391ac5f8d2f0f
 -- This is a generated file
 local Qless = {
   ns = 'ql:'
@@ -24,7 +24,7 @@ QlessRecurringJob.__index = QlessRecurringJob
 
 Qless.config = {}
 
-function table.extend(self, other)
+local function tbl_extend(self, other)
   for i, v in ipairs(other) do
     table.insert(self, v)
   end
@@ -285,7 +285,6 @@ function Qless.cancel(...)
 
   return arg
 end
-
 
 Qless.config.defaults = {
   ['application']        = 'qless',
@@ -693,6 +692,10 @@ function QlessJob:retry(now, queue, worker, delay, group, message)
       }))
     end
 
+    if redis.call('zscore', 'ql:tracked', self.jid) ~= false then
+      Qless.publish('failed', self.jid)
+    end
+
     redis.call('sadd', 'ql:failures', group)
     redis.call('lpush', 'ql:f:' .. group, self.jid)
     local bin = now - (now % 86400)
@@ -815,6 +818,8 @@ function QlessJob:heartbeat(now, worker, data)
     end
 
     redis.call('zadd', 'ql:w:' .. worker .. ':jobs', expires, self.jid)
+
+    redis.call('zadd', 'ql:workers', now, worker)
 
     local queue = Qless.queue(
       redis.call('hget', QlessJob.ns .. self.jid, 'queue'))
@@ -1121,7 +1126,7 @@ function QlessQueue:peek(now, count)
 
   self:check_scheduled(now, count - #jids)
 
-  table.extend(jids, self.work.peek(count - #jids))
+  tbl_extend(jids, self.work.peek(count - #jids))
 
   return jids
 end
@@ -1170,7 +1175,7 @@ function QlessQueue:pop(now, worker, count)
 
   self:check_scheduled(now, count - #jids)
 
-  table.extend(jids, self.work.peek(count - #jids))
+  tbl_extend(jids, self.work.peek(count - #jids))
 
   local state
   for index, jid in ipairs(jids) do

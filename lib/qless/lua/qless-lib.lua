@@ -1,4 +1,4 @@
--- Current SHA: 9d2cca3846a96fee53000085e36638e74ed392ed
+-- Current SHA: e30168ce06262cfa4df107cadeb391ac5f8d2f0f
 -- This is a generated file
 -------------------------------------------------------------------------------
 -- Forward declarations to make everything happy
@@ -33,7 +33,7 @@ QlessRecurringJob.__index = QlessRecurringJob
 Qless.config = {}
 
 -- Extend a table. This comes up quite frequently
-function table.extend(self, other)
+local function tbl_extend(self, other)
   for i, v in ipairs(other) do
     table.insert(self, v)
   end
@@ -421,7 +421,6 @@ function Qless.cancel(...)
 
   return arg
 end
-
 -------------------------------------------------------------------------------
 -- Configuration interactions
 -------------------------------------------------------------------------------
@@ -972,6 +971,10 @@ function QlessJob:retry(now, queue, worker, delay, group, message)
       }))
     end
 
+    if redis.call('zscore', 'ql:tracked', self.jid) ~= false then
+      Qless.publish('failed', self.jid)
+    end
+
     -- Add this type of failure to the list of failures
     redis.call('sadd', 'ql:failures', group)
     -- And add this particular instance to the failed types
@@ -1130,6 +1133,9 @@ function QlessJob:heartbeat(now, worker, data)
     -- Update hwen this job was last updated on that worker
     -- Add this job to the list of jobs handled by this worker
     redis.call('zadd', 'ql:w:' .. worker .. ':jobs', expires, self.jid)
+
+    -- Make sure we this worker to the list of seen workers
+    redis.call('zadd', 'ql:workers', now, worker)
 
     -- And now we should just update the locks
     local queue = Qless.queue(
@@ -1525,7 +1531,7 @@ function QlessQueue:peek(now, count)
 
   -- With these in place, we can expand this list of jids based on the work
   -- queue itself and the priorities therein
-  table.extend(jids, self.work.peek(count - #jids))
+  tbl_extend(jids, self.work.peek(count - #jids))
 
   return jids
 end
@@ -1600,7 +1606,7 @@ function QlessQueue:pop(now, worker, count)
 
   -- With these in place, we can expand this list of jids based on the work
   -- queue itself and the priorities therein
-  table.extend(jids, self.work.peek(count - #jids))
+  tbl_extend(jids, self.work.peek(count - #jids))
 
   local state
   for index, jid in ipairs(jids) do
